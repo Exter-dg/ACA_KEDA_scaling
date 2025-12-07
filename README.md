@@ -19,7 +19,8 @@ The goal is to observe whether ACA waits for a message to finish processing befo
 
 - **Test:**
   - Observe if the container app scales down after 3 minutes (cooldown) or waits for the 6-minute processing to complete.
-
+  
 
 ## Observations
-
+![alt text](image.png)
+- Container scales down after 3 minutes and doesn't wait for the processing to finish. KEDA scales down the container after the cooldown period.

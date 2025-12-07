@@ -1,23 +1,21 @@
 import os
 import json
+import time
 from azure.servicebus import ServiceBusClient
 
 SERVICE_BUS_CONNECTION_STRING = os.getenv("SERVICE_BUS_CONNECTION_STRING")
 QUEUE_NAME = os.getenv("SERVICE_BUS_QUEUE_NAME")
 
 
-def process_message(queue_name: str, payload: dict, receiver, msg):
+def process_message(queue_name: str, payload: dict):
     print(f"[PROCESSOR] Processing message from queue '{queue_name}'")
     print(f"[PROCESSOR] Payload: {payload}")
 
     # Simulate some processing work
-    import time
     print("[PROCESSOR] Simulating 6 minutes of processing...")
     time.sleep(6*60)
 
     print("[PROCESSOR] Done!")
-    receiver.complete_message(msg)
-    print("[MAIN] Message completed (deleted) from Service Bus.")
     return {
         "status": 200,
         "response": "success"
@@ -29,12 +27,16 @@ def main():
     receiver = client.get_queue_receiver(queue_name=QUEUE_NAME)
 
     print(f"Waiting for a message on: {QUEUE_NAME}")
+    print(f"[MAIN] Using Service Bus connection string: {SERVICE_BUS_CONNECTION_STRING}")
 
     with receiver:
         messages = receiver.receive_messages(max_message_count=1, max_wait_time=10)
+        print(f"[MAIN] Received {len(messages)} messages.")
 
         if not messages:
-            print("No messages received. Exiting container.")
+            print("No messages received.")
+            time.sleep(60)
+            print("Waited 60 seconds. Exiting now.")
             return
 
         msg = messages[0]
@@ -45,6 +47,9 @@ def main():
         except Exception:
             raw = str(msg)
 
+        receiver.complete_message(msg)
+        print("[MAIN] Message completed (deleted) from Service Bus.")
+
         raw_text = raw.decode("utf-8") if isinstance(raw, (bytes, bytearray)) else raw
 
         print(f"[MAIN] Raw message body: {raw_text}")
@@ -54,8 +59,7 @@ def main():
         except Exception:
             print("[MAIN] Failed to parse JSON payload")
             payload = {}
-
-        result = process_message(QUEUE_NAME, payloa, receiver, msg)
+        result = process_message(QUEUE_NAME, payload)
 
     print(f"[MAIN] Processing result: {result}")
     print("Container exiting now (1 message processed).")
