@@ -1,0 +1,65 @@
+import os
+import json
+from azure.servicebus import ServiceBusClient
+
+SERVICE_BUS_CONNECTION_STRING = os.getenv("SERVICE_BUS_CONNECTION_STRING")
+QUEUE_NAME = os.getenv("SERVICE_BUS_QUEUE_NAME")
+
+
+def process_message(queue_name: str, payload: dict, receiver, msg):
+    print(f"[PROCESSOR] Processing message from queue '{queue_name}'")
+    print(f"[PROCESSOR] Payload: {payload}")
+
+    # Simulate some processing work
+    import time
+    print("[PROCESSOR] Simulating 6 minutes of processing...")
+    time.sleep(6*60)
+
+    print("[PROCESSOR] Done!")
+    receiver.complete_message(msg)
+    print("[MAIN] Message completed (deleted) from Service Bus.")
+    return {
+        "status": 200,
+        "response": "success"
+    }
+
+
+def main():
+    client = ServiceBusClient.from_connection_string(SERVICE_BUS_CONNECTION_STRING)
+    receiver = client.get_queue_receiver(queue_name=QUEUE_NAME)
+
+    print(f"Waiting for a message on: {QUEUE_NAME}")
+
+    with receiver:
+        messages = receiver.receive_messages(max_message_count=1, max_wait_time=10)
+
+        if not messages:
+            print("No messages received. Exiting container.")
+            return
+
+        msg = messages[0]
+
+        # Decode message body exactly like your real app
+        try:
+            raw = b"".join(msg.body) if hasattr(msg, "body") else str(msg)
+        except Exception:
+            raw = str(msg)
+
+        raw_text = raw.decode("utf-8") if isinstance(raw, (bytes, bytearray)) else raw
+
+        print(f"[MAIN] Raw message body: {raw_text}")
+
+        try:
+            payload = json.loads(raw_text)
+        except Exception:
+            print("[MAIN] Failed to parse JSON payload")
+            payload = {}
+
+        result = process_message(QUEUE_NAME, payloa, receiver, msg)
+
+    print(f"[MAIN] Processing result: {result}")
+    print("Container exiting now (1 message processed).")
+
+
+if __name__ == "__main__":
+    main()
