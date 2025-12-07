@@ -12,8 +12,8 @@ def process_message(queue_name: str, payload: dict):
     print(f"[PROCESSOR] Payload: {payload}")
 
     # Simulate some processing work
-    print("[PROCESSOR] Simulating 6 minutes of processing...")
-    time.sleep(6*60)
+    # print("[PROCESSOR] Simulating 2 minutes of processing...")
+    # time.sleep(120)
 
     print("[PROCESSOR] Done!")
     return {
@@ -47,6 +47,9 @@ def main():
         except Exception:
             raw = str(msg)
 
+        print("[MAIN] Simulating 3 minute of pre-processing...")
+        time.sleep(180)
+        print("[MAIN] Preprocessing completed...")
         receiver.complete_message(msg)
         print("[MAIN] Message completed (deleted) from Service Bus.")
 
